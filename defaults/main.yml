@@ -1,0 +1,10 @@
+---
+packages:
+  - sssd
+  - sssd-tools
+  - realmd
+  - oddjob
+  - oddjob-mkhomedir
+  - adcli
+  - samba
+  - samba-common-tools

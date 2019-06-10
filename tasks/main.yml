@@ -1,0 +1,66 @@
+---
+- name: Install Required software
+  yum:
+    name: "{{ packages }}"
+    state: present
+
+- name: Install Pip
+  easy_install:
+    name: pip
+    state: present
+
+- name: Install Pexpect
+  pip:
+    name: pexpect
+
+- name: Check binding
+  shell: /bin/bash -c "realm list | grep sssd"
+  register: realmd_bound
+  changed_when: false
+  ignore_errors: true
+
+- name: Join to AD
+  expect:
+    command: realm join --user={{ ad_user }} --computer-ou="{{ linux_ou }}" {{ domain_name }}
+    responses:
+      Password for *: "{{ ad_pass }}"
+  when: realmd_bound is failed
+
+- name: Set FQDN to false
+  lineinfile:
+    dest: /etc/sssd/sssd.conf
+    regexp: '^use_fully_qualified_names'
+    line: "use_fully_qualified_names = False"
+  when: realmd_bound is failed
+
+- name: Set SSH listener
+  lineinfile:
+    dest: /etc/sssd/sssd.conf
+    regexp: '^services'
+    line: "services = nss, pam, ssh"
+  when: realmd_bound is failed
+
+- name: Set Public Key Attribute
+  lineinfile:
+    dest: /etc/sssd/sssd.conf
+    line: ldap_user_ssh_public_key = sshPublicKeys
+    insertafter: '\[domain\/"{{ domain_name }}"\]'
+  notify: restart_sssd
+  when: realmd_bound is failed
+
+- name: Set SSH Key Command
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys
+    insertafter: EOF
+    state: present
+  when: realmd_bound is failed
+
+- name: Set SSH Key Command User
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: AuthorizedKeysCommandUser nobody
+    insertafter: EOF
+    state: present
+  notify: restart_sshd
+  when: realmd_bound is failed

@@ -1,0 +1,14 @@
+galaxy_info:
+  author: Mathew Rupp
+  description: Join RHEL7 to AD and use public keys stored in AD
+  license: BSD
+  min_ansible_version: 2.4
+  github_branch: master
+  platforms:
+  - name: Redhat
+    versions:
+    - 7
+  galaxy_tags:
+    - rhel
+    - ad
+  dependencies: []
